@@ -12,6 +12,8 @@
 //
 /*************************************************************************************************************/
 
+#define DADS_CLOCK				0
+
 #define NUMITRON_DISPLAY        0
 #define NIXIE_DISPLAY           1
 #define VFD_DISPLAY             0
@@ -112,8 +114,13 @@ typedef struct
 #define NINE    0x0080
 #endif
 
-// IN-8, NumiCore v1.0 board
-// NOTE: Each value is Endian-swapped for convenience. 
+#if (DADS_CLOCK)
+
+// IN-8, NumiCore v1.0 board (built for Dad)
+// This particular instance of the system requires the following
+// definitions to operate properly.
+// It has AM/PM/DATE indicators, in addition to 2 colon indicators.
+// NOTE: Each value is Endian-swapped for convenience.
 #define ONE     0x0200
 #define TWO     0x0100
 #define THREE   0x0080
@@ -132,6 +139,30 @@ typedef struct
 #define LCOLON  0x0080
 #define RCOLON  0x0200
 
+#else
+
+// IN-8, NumiCore v1.0 board (2nd build)
+// This board only has AM/PM indicators and colon indicators. DATE is not used.
+// NOTE: Each value is Endian-swapped for convenience. 
+#define ONE     0x0200
+#define TWO     0x0100
+#define THREE   0x0080
+#define FOUR    0x0040
+#define FIVE    0x0020
+#define SIX     0x0010
+#define SEVEN   0x0008
+#define EIGHT   0x0004
+#define NINE    0x0002
+#define ZERO    0x0001
+
+// Indicator bulb definitions (bit positions in P0)
+#define AM      0x0800
+#define PM      0x2000
+#define DATE    0x0000
+#define LCOLON  0x0080
+#define RCOLON  0x0200
+
+#endif
 
 /*************************************************************************************************************/
 // Hardware Definitions/Port Pin Functions
@@ -180,13 +211,13 @@ typedef struct
  *               PD5 -  GPO (unused)                          0      1  
  *               PD4 -  GPO (unused)                          0      1
  *                                                           -----------
- *               PD3 -  GPO (unused)                          0      1  
+ *               PD3 -  GPO (!HV_EN)                          1      1			0 = HV Supply Enabled, 1 = Disabled
  *               PD2 -  INT0 (1HZ)                            0      0          Has external pull-up.
  *               PD1 -  TXD                                   0      1  
  *               PD0 -  RXD                                   0      0  
  * =======================================================================*/
 #define PORTD_DDR       0xFA
-#define PORTD_PORT      0x00
+#define PORTD_PORT      0x08
 
 /*************************************************************************************************************/
 // Misc Enumerations
@@ -236,7 +267,7 @@ enum
 // Misc Functions
 /*************************************************************************************************************/
 void ledControl (bool on);
-
+void hvpsControl (bool on);
 void backgroundTasks (void);
 
 /*************************************************************************************************************/

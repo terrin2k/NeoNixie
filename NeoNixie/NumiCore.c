@@ -594,6 +594,22 @@ void ledControl (bool on)
     }
 }
 
+// High Voltage Power Supply Control
+void hvpsControl (bool on)
+{
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+        if (on)
+        {
+            PORTD &= ~(_BV(PD3));
+        }
+        else
+        {
+        	PORTD |= _BV(PD3);
+        }
+    }
+}
+
 // This function picks out the MCUSR and clears the Watch Dog Timer interrupt.
 void get_mcusr(void) \
     __attribute__((naked)) \
@@ -744,10 +760,14 @@ void displayInit (void)
     // Initialize the displayBuffer, then write it out to the serial registers.
     memset((uint8_t *)&displayBuffer.data[0], 0, sizeof(displayBuffer.data));
 
+    // Enable the high-voltage supply and allow it time to stabilize.
+    hvpsControl(true);
+    _delay_ms(250);
+
     // Also set up displayBuffer.symbol info according to how the hardware is connected.
     // Here's the convention: H10 or Symbol 0 (MSB to LSB) -> Next-to-last register bits Q1-0, last register, bits Q7-0.
     // See diagram in notes to understand how this is set up.
-  
+
     // This particular setup is for a NumiCore v1.0 build using 2 30-pin headers on the main row with 4 bits unused between them.
     // 10-Hours
     displayBuffer.symbol[H10].code      = OFF;
