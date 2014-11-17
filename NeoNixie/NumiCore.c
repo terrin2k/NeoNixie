@@ -630,7 +630,10 @@ void wdtInit (void)
     get_mcusr();
 
     // Set the Watchdog for a 30 ms timeout.
-    wdt_enable(WDTO_30MS);
+    wdt_enable(WDTO_2S);  // formerly WDTO_30MS
+
+    // Give it a kick.
+    wdt_reset();
 }
 
 void spiMasterInit (void)
@@ -762,7 +765,6 @@ void displayInit (void)
 
     // Enable the high-voltage supply and allow it time to stabilize.
     hvpsControl(true);
-    _delay_ms(250);
 
     // Also set up displayBuffer.symbol info according to how the hardware is connected.
     // Here's the convention: H10 or Symbol 0 (MSB to LSB) -> Next-to-last register bits Q1-0, last register, bits Q7-0.
@@ -772,8 +774,8 @@ void displayInit (void)
     // 10-Hours
     displayBuffer.symbol[H10].code      = OFF;
     displayBuffer.symbol[H10].old_code  = OFF;
-    displayBuffer.symbol[H10].index     = 8;
-    displayBuffer.symbol[H10].offset    = 6;
+    displayBuffer.symbol[H10].index     = H10_INDEX;
+    displayBuffer.symbol[H10].offset    = H10_SHIFT;
     displayBuffer.symbol[H10].mask      = CODE_MASK;
     displayBuffer.symbol[H10].blink     = false;
     displayBuffer.symbol[H10].blink_time = DEFAULT_BLINK_TIME;
@@ -782,8 +784,8 @@ void displayInit (void)
     // 1-Hours
     displayBuffer.symbol[H1].code       = OFF;
     displayBuffer.symbol[H1].old_code   = OFF;
-    displayBuffer.symbol[H1].index      = 7;
-    displayBuffer.symbol[H1].offset     = 4;
+    displayBuffer.symbol[H1].index      = H1_INDEX;
+    displayBuffer.symbol[H1].offset     = H1_SHIFT;
     displayBuffer.symbol[H1].mask       = CODE_MASK;
     displayBuffer.symbol[H1].blink      = false;
     displayBuffer.symbol[H1].blink_time = DEFAULT_BLINK_TIME;    
@@ -792,8 +794,8 @@ void displayInit (void)
     // 10-Minutes
     displayBuffer.symbol[M10].code      = OFF;
     displayBuffer.symbol[M10].old_code  = OFF;
-    displayBuffer.symbol[M10].index     = 6;
-    displayBuffer.symbol[M10].offset    = 2;
+    displayBuffer.symbol[M10].index     = M10_INDEX;
+    displayBuffer.symbol[M10].offset    = M10_SHIFT;
     displayBuffer.symbol[M10].mask      = CODE_MASK;
     displayBuffer.symbol[M10].blink     = false;
     displayBuffer.symbol[M10].blink_time = DEFAULT_BLINK_TIME;
@@ -802,8 +804,8 @@ void displayInit (void)
     // 1-Minutes    
     displayBuffer.symbol[M1].code       = OFF;
     displayBuffer.symbol[M1].old_code   = OFF;
-    displayBuffer.symbol[M1].index      = 4;
-    displayBuffer.symbol[M1].offset     = 4;
+    displayBuffer.symbol[M1].index      = M1_INDEX;
+    displayBuffer.symbol[M1].offset     = M1_SHIFT;
     displayBuffer.symbol[M1].mask       = CODE_MASK;
     displayBuffer.symbol[M1].blink      = false;
     displayBuffer.symbol[M1].blink_time = DEFAULT_BLINK_TIME;
@@ -812,8 +814,8 @@ void displayInit (void)
     // 10-Seconds
     displayBuffer.symbol[S10].code      = OFF;
     displayBuffer.symbol[S10].old_code  = OFF;
-    displayBuffer.symbol[S10].index     = 3;
-    displayBuffer.symbol[S10].offset    = 2;
+    displayBuffer.symbol[S10].index     = S10_INDEX;
+    displayBuffer.symbol[S10].offset    = S10_SHIFT;
     displayBuffer.symbol[S10].mask      = CODE_MASK;
     displayBuffer.symbol[S10].blink     = false;
     displayBuffer.symbol[S10].blink_time = DEFAULT_BLINK_TIME;
@@ -822,8 +824,8 @@ void displayInit (void)
     // 1-Seconds
     displayBuffer.symbol[S1].code       = OFF;
     displayBuffer.symbol[S1].old_code   = OFF;
-    displayBuffer.symbol[S1].index      = 2;
-    displayBuffer.symbol[S1].offset     = 0;
+    displayBuffer.symbol[S1].index      = S1_INDEX;
+    displayBuffer.symbol[S1].offset     = S1_SHIFT;
     displayBuffer.symbol[S1].mask       = CODE_MASK;
     displayBuffer.symbol[S1].blink      = false;
     displayBuffer.symbol[S1].blink_time = DEFAULT_BLINK_TIME;
@@ -832,8 +834,8 @@ void displayInit (void)
     // Pad 0 (16-bits)
     displayBuffer.symbol[P0].code       = OFF;
     displayBuffer.symbol[P0].old_code   = OFF;
-    displayBuffer.symbol[P0].index      = 0;
-    displayBuffer.symbol[P0].offset     = 0;
+    displayBuffer.symbol[P0].index      = P0_INDEX;
+    displayBuffer.symbol[P0].offset     = P0_SHIFT;
     displayBuffer.symbol[P0].mask       = 0xFFFF;
     displayBuffer.symbol[P0].blink      = false;
     displayBuffer.symbol[P0].blink_time = DEFAULT_BLINK_TIME;    
@@ -871,7 +873,7 @@ void processInput (void)
     do
     {
         // Command entry mode
-        c = getchar( );
+        c = getchar();
 
         // Check for invalid character. If so, no data available from the buffer, so we're done.
         if (( c == (uint8_t)EOF ) || (c == (uint8_t)_FDEV_EOF))
@@ -891,7 +893,8 @@ void processInput (void)
                 // Handle 'hotkeys' here, too.
                 switch ( c )
                 {
-                    // Backspace
+                    // Delete & Backspace
+                	case '\127':
                     case '\b':
                     {                
                         if ( len > 0 )
@@ -961,6 +964,7 @@ void processInput (void)
                             sendBell();
                         }
                     }
+                    break;
                 } // end switch ( c )
             } // end if CR/LF
             else
@@ -997,18 +1001,28 @@ void processInput (void)
             showTemperature();
             break;
 
-//      // Test Code
-//      // Dump contents of display buffer to screen.
-//      case 'b':
-//      {
-//          uint8_t i;
-// 
-//          for (i = 0; i < sizeof(displayBuffer.data); i++)
-//          {
-//              printf_P(PSTR("%d: 0x%02x\r\n"), i, displayBuffer.data[i]);
-//          }
-//      }
-//      break;
+		// Test Code
+		// Dump contents of display buffer to screen.
+		case 'b':
+		{
+			uint8_t i;
+
+			for (i = 0; i < sizeof(displayBuffer.data); i++)
+			{
+				printf_P(PSTR("%d: 0x%02x\r\n"), i, displayBuffer.data[i]);
+			}
+		}
+		break;
+
+		// Output digits to the display.
+		case 'o':
+
+			break;
+
+		// Return display to normal mode.
+		case 'r':
+
+			break;
 
         case 'v':
             showVersion();
@@ -1024,6 +1038,7 @@ void processInput (void)
             printf((const char *)command);
             printf_P( PSTR( "\r\n" ) );            
         }
+        break;
     } // end switch    
 
     // Now zero out the command buffer, since we're done with it.
@@ -1043,6 +1058,9 @@ void showHelp(void)
   printf_P( PSTR( "y - Set day\r\n" ) );
   printf_P( PSTR( "d - Set date\r\n" ) );
   printf_P( PSTR( "c - Show temperature\r\n" ) );
+  printf_P( PSTR( "+ - Increase brightness\r\n" ) );
+  printf_P( PSTR( "- - Decrease brightness\r\n" ) );
+  printf_P( PSTR( "b - Dump display buffer\r\n" ) );
   // Add other options here.
   // Enable/Disable Fading
   // 12/24 hour display
@@ -1548,7 +1566,7 @@ void drawDisplay(void)
 int main (void)
 {
     // Init Watchdog timer.
-    wdtInit();
+    //wdtInit();
     
     // Initialize all the other stuff.
     clockInit();
@@ -1601,9 +1619,9 @@ int main (void)
 // This should only run when the timer interrupt determines there is something to wake up for.
 /********************************************************************************************************************/
 void backgroundTasks (void)
-{    
+{
     // Kick the watchdog.
-    wdt_reset();    
+    //wdt_reset();
 
     // Update the display buffer at the appropriate time. (once per second)
     if (updateTime)
@@ -1640,25 +1658,30 @@ void backgroundTasks (void)
             // Process terminal input
             processInput();
 
+#if (BUTTONS_PRESENT)
             // Check for any external switch changes.
             scanExtSwitches();
+#endif
         }
 
         // 10 ms task
         if ((currentTime % (10*TICKS_PER_MS)) == 0)
         {
+#if (BUTTONS_PRESENT)
             // Run the switch state machine
             runSwitchStateMachine();
+#endif
             
             // Update the display.
             drawDisplay();            
         }
- 
+
         // Calculate display PWM stuff & refresh the display hardware.
         refreshDisplay();
 
         // Refresh the Global Dimmer.
-        refreshGlobalDimmerPWM();      
+        refreshGlobalDimmerPWM();
+
     }
 }
 

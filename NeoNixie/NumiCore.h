@@ -13,6 +13,7 @@
 /*************************************************************************************************************/
 
 #define DADS_CLOCK				0
+#define BUTTONS_PRESENT			0
 
 #define NUMITRON_DISPLAY        0
 #define NIXIE_DISPLAY           1
@@ -139,28 +140,60 @@ typedef struct
 #define LCOLON  0x0080
 #define RCOLON  0x0200
 
+// Index & Shift values for each digit
+#define H10_INDEX	8
+#define H10_SHIFT	6
+#define H1_INDEX	7
+#define H1_SHIFT	4
+#define M10_INDEX	6
+#define M10_SHIFT	2
+#define M1_INDEX	4
+#define M1_SHIFT	4
+#define S10_INDEX	3
+#define S10_SHIFT	2
+#define S1_INDEX	2
+#define S1_SHIFT	0
+#define P0_INDEX	0
+#define P0_SHIFT	0
+
 #else
 
 // IN-8, NumiCore v1.0 board (2nd build)
 // This board only has AM/PM indicators and colon indicators. DATE is not used.
 // NOTE: Each value is Endian-swapped for convenience. 
-#define ONE     0x0200
-#define TWO     0x0100
-#define THREE   0x0080
-#define FOUR    0x0040
-#define FIVE    0x0020
-#define SIX     0x0010
-#define SEVEN   0x0008
-#define EIGHT   0x0004
-#define NINE    0x0002
-#define ZERO    0x0001
+#define ONE     0x0001
+#define TWO     0x0002
+#define THREE   0x0004
+#define FOUR    0x0008
+#define FIVE    0x0010
+#define SIX     0x0020
+#define SEVEN   0x0040
+#define EIGHT   0x0080
+#define NINE    0x0100
+#define ZERO    0x0200
 
 // Indicator bulb definitions (bit positions in P0)
-#define AM      0x0800
-#define PM      0x2000
+#define AM      0x8000
+#define PM      0x0800
 #define DATE    0x0000
-#define LCOLON  0x0080
+#define LCOLON  0x2000
 #define RCOLON  0x0200
+
+// Index & Shift values for each digit
+#define H10_INDEX	2
+#define H10_SHIFT	0
+#define H1_INDEX	3
+#define H1_SHIFT	2
+#define M10_INDEX	4
+#define M10_SHIFT	4
+#define M1_INDEX	6
+#define M1_SHIFT	2
+#define S10_INDEX	7
+#define S10_SHIFT	4
+#define S1_INDEX	8
+#define S1_SHIFT	6
+#define P0_INDEX	0
+#define P0_SHIFT	0
 
 #endif
 
