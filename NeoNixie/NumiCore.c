@@ -893,9 +893,8 @@ void processInput (void)
                 // Handle 'hotkeys' here, too.
                 switch ( c )
                 {
-                    // Delete & Backspace
-                	case '\127':
-                    case '\b':
+                    // Backspace
+                	case '\b':
                     {                
                         if ( len > 0 )
                         {
@@ -911,13 +910,15 @@ void processInput (void)
                         }
                     }
                     break;
-                    
+
+#if 0
                     case '~':
                     {
                         // Lock up for WDT Reset if we receive 0x7E, i.e. '~'.
                         while(1);
                     }
                     break;
+#endif
 
                     case '+':
                         // Increase brightness by one step.
@@ -1014,16 +1015,6 @@ void processInput (void)
 		}
 		break;
 
-		// Output digits to the display.
-		case 'o':
-
-			break;
-
-		// Return display to normal mode.
-		case 'r':
-
-			break;
-
         case 'v':
             showVersion();
             break;
@@ -1082,7 +1073,7 @@ void displayPrompt(void)
 
 void showVersion (void)
 {
-    printf_P( PSTR( "NumiCore v1.0 by Daniel Corley\r\n" ) );
+    printf_P( PSTR( "NumiCore v1.1 by Daniel Corley\r\n" ) );
     printf_P( PSTR( "Built on %s at %s.\r\n" ), __DATE__, __TIME__);
 }
 
@@ -1626,23 +1617,19 @@ void backgroundTasks (void)
     // Update the display buffer at the appropriate time. (once per second)
     if (updateTime)
     {
-        // Update the time from the RTC only when necessary to minimize SPI usage.
-        if (updateTime)
-        {
-            updateTime = false;
-            rtcRead(RTC_BASE_ADDR, (uint8_t *)&timeAndDate, sizeof(timeAndDate));
+		updateTime = false;
+		rtcRead(RTC_BASE_ADDR, (uint8_t *)&timeAndDate, sizeof(timeAndDate));
 
-			// Check for 3:00:00 AM
-			if (((timeAndDate.hours.hours10 & 0x02) == 0) &&
-				(timeAndDate.hours.hours1 == 3) &&
-				(timeAndDate.minutes.minutes10 == 0) &&
-				(timeAndDate.minutes.minutes1 == 0) &&
-				(timeAndDate.seconds.seconds10 == 0) &&
-				(timeAndDate.seconds.seconds1 == 0) )
-			{
-				nixieSaver = true;
-			}			 
-        }
+		// Check for 3:00:00 AM
+		if (((timeAndDate.hours.hours10 & 0x02) == 0) &&
+			(timeAndDate.hours.hours1 == 3) &&
+			(timeAndDate.minutes.minutes10 == 0) &&
+			(timeAndDate.minutes.minutes1 == 0) &&
+			(timeAndDate.seconds.seconds10 == 0) &&
+			(timeAndDate.seconds.seconds1 == 0) )
+		{
+			nixieSaver = true;
+		}
     }
 
     // Run the following functions ONLY when the tick timer fires.
